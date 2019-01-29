@@ -1,0 +1,69 @@
+CHARS = ('A'..'Z')
+REFLECTOR = "WL ZM BC KP XO HR VY FI NE US JT GA QD LW MZ CB PK OX RH YV IF EN SU TJ AG DQ"
+ROTOR_1 = "AK BB CJ DY EU FX GP HF IO JS KV LH MN NA OZ PE QR RW ST TI UC VM WD XG YQ ZL"
+ROTOR_2 = "AI BY CT DU EF FE GC HN IM JH KQ LZ MB NK OJ PV QO RA SG TD US VW WP XR YL ZX"
+ROTOR_3 = "AZ BN CU DD ET FO GX HR IQ JG KB LF MM NL OH PI QY RC SP TW UK VE WS XA YJ ZV"
+
+plugboard = "SD HY GM EB UO LJ WZ QT AC FR"
+config = "BFR"
+start = "OIZ"
+#rotate shifts the characters by one to the left
+#a = [ "a", "b", "c", "d" ]
+#a.rotate #=> ["b", "c", "d", "a"]
+#split can seperate the letter or take out letter
+#"hello".split('') #=> ["h", "e", "l", "l", "o"]
+#"hello".split('ll') #=> ["he", "o"]
+#transpose shifts things by one place a = [[1,2], [3,4], [5,6]]
+#a.transpose   #=> [[1, 3, 5], [2, 4, 6]]
+def config_rotor(rotor, key, value)
+  keys, values = rotor.split(' ').map(&:chars).transpose
+  keys.rotate!(keys.index(value))
+  values.rotate!(values.index(key))
+  Hash[keys.zip(values)]
+end
+
+def config_plugboard(config)
+  plugboard = config.split(' ').map(&:chars).to_h
+  plugboard.merge!(plugboard.invert)
+  plugboard.default_proc = proc { |hash, key| key }
+  plugboard
+end
+#$= able to use throughtout the program
+$reflector = REFLECTOR.split(' ').map(&:chars).to_h
+$rotor_1 = config_rotor(ROTOR_1, config[0], start[0])
+$rotor_2 = config_rotor(ROTOR_2, config[1], start[1])
+$rotor_3 = config_rotor(ROTOR_3, config[2], start[2])
+$plugboard = config_plugboard(plugboard)
+
+def input(string)
+  rotor_1, rotor_2, rotor_3 = $rotor_1.dup, $rotor_2.dup, $rotor_3.dup
+
+  string.chars.each_with_index.map do |char, index|
+    rotor_1 = rotate_rotor rotor_1
+    rotor_2 = rotate_rotor rotor_2 if index % 25 == 0
+    rotor_3 = rotate_rotor rotor_3 if index % 25 * 25 == 0
+
+    char = $plugboard[char]
+
+    char = rotor_1[char]
+    char = rotor_2[char]
+    char = rotor_3[char]
+
+    char = $reflector[char]
+
+    char = rotor_3.invert[char]
+    char = rotor_2.invert[char]
+    char = rotor_1.invert[char]
+
+    $plugboard[char]
+  end.join
+end
+
+def rotate_rotor(rotor)
+  Hash[rotor.map { |k,v| [k == CHARS.last ? CHARS.first : k.next, v] }]
+end
+#Text must be in caps to work
+plain_text = 'THELANDING'
+puts "Encrypted '#{plain_text}' to '#{encrypted = input(plain_text)}'"
+puts "Decrypted '#{encrypted}' to '#{decrypted = input(encrypted)}'"
+puts 'Success!' if plain_text == decrypted
